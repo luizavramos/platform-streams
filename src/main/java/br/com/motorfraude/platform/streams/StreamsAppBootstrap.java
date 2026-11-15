@@ -27,13 +27,15 @@ public final class StreamsAppBootstrap implements AutoCloseable {
             StreamsConfig.consumerPrefix("group.instance.id"));
 
     private final KafkaStreams streams;
-    private final PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    private final PrometheusMeterRegistry registry;
     private final KafkaStreamsMetrics kafkaMetrics;
     private final MiniHttpServer http;
     private volatile BooleanSupplier extraReadiness = () -> true;
     private volatile boolean closed;
 
-    private StreamsAppBootstrap(StreamsSettings settings, Properties extra, Function<PrometheusMeterRegistry, Topology> topology) {
+    private StreamsAppBootstrap(StreamsSettings settings, Properties extra, PrometheusMeterRegistry registry,
+            Function<PrometheusMeterRegistry, Topology> topology) {
+        this.registry = registry;
         this.streams = new KafkaStreams(topology.apply(registry), properties(settings, extra));
         this.kafkaMetrics = new KafkaStreamsMetrics(streams);
         this.kafkaMetrics.bindTo(registry);
@@ -41,15 +43,20 @@ public final class StreamsAppBootstrap implements AutoCloseable {
     }
 
     public static StreamsAppBootstrap create(StreamsSettings settings, Topology topology) {
-        return new StreamsAppBootstrap(settings, new Properties(), registry -> topology);
+        return new StreamsAppBootstrap(settings, new Properties(), new PrometheusMeterRegistry(PrometheusConfig.DEFAULT), registry -> topology);
     }
 
     public static StreamsAppBootstrap create(StreamsSettings settings, Function<PrometheusMeterRegistry, Topology> topology) {
-        return new StreamsAppBootstrap(settings, new Properties(), topology);
+        return new StreamsAppBootstrap(settings, new Properties(), new PrometheusMeterRegistry(PrometheusConfig.DEFAULT), topology);
     }
 
     public static StreamsAppBootstrap create(StreamsSettings settings, Properties extra, Function<PrometheusMeterRegistry, Topology> topology) {
-        return new StreamsAppBootstrap(settings, extra, topology);
+        return new StreamsAppBootstrap(settings, extra, new PrometheusMeterRegistry(PrometheusConfig.DEFAULT), topology);
+    }
+
+    public static StreamsAppBootstrap create(StreamsSettings settings, Properties extra, PrometheusMeterRegistry registry,
+            Function<PrometheusMeterRegistry, Topology> topology) {
+        return new StreamsAppBootstrap(settings, extra, registry, topology);
     }
 
     static Properties properties(StreamsSettings settings) {
