@@ -76,4 +76,28 @@ class StreamsPropertiesTest {
         assertThat(s.stateDir()).isEqualTo(Path.of("/data"));
         assertThat(s.replicationFactor()).isEqualTo(1);
     }
+
+    @Test
+    @DisplayName("propriedades extras do app (handler de DLQ, intervalo de commit) entram por cima e podem ser objetos")
+    void propriedadesExtras() {
+        var extra = new java.util.Properties();
+        extra.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
+        extra.put("engine.dlq.producer", new Object());
+
+        var props = StreamsAppBootstrap.properties(settings(), extra);
+
+        assertThat(props.get(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG)).isEqualTo(100);
+        assertThat(props.get("engine.dlq.producer")).isNotNull();
+        assertThat(props.get(StreamsConfig.PROCESSING_GUARANTEE_CONFIG)).isEqualTo(StreamsConfig.EXACTLY_ONCE_V2);
+    }
+
+    @Test
+    @DisplayName("as propriedades extras não conseguem trocar a garantia exactly-once")
+    void extrasNaoTrocamAGarantia() {
+        var extra = new java.util.Properties();
+        extra.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.AT_LEAST_ONCE);
+
+        assertThatThrownBy(() -> StreamsAppBootstrap.properties(settings(), extra)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(StreamsConfig.PROCESSING_GUARANTEE_CONFIG);
+    }
 }

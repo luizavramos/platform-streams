@@ -22,6 +22,9 @@ public final class StreamsAppBootstrap implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(StreamsAppBootstrap.class);
     private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
+    private static final java.util.Set<String> PROTECTED = java.util.Set.of(StreamsConfig.APPLICATION_ID_CONFIG,
+            StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.STATE_DIR_CONFIG,
+            StreamsConfig.consumerPrefix("group.instance.id"));
 
     private final KafkaStreams streams;
     private final PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
@@ -30,22 +33,30 @@ public final class StreamsAppBootstrap implements AutoCloseable {
     private volatile BooleanSupplier extraReadiness = () -> true;
     private volatile boolean closed;
 
-    private StreamsAppBootstrap(StreamsSettings settings, Function<PrometheusMeterRegistry, Topology> topology) {
-        this.streams = new KafkaStreams(topology.apply(registry), properties(settings));
+    private StreamsAppBootstrap(StreamsSettings settings, Properties extra, Function<PrometheusMeterRegistry, Topology> topology) {
+        this.streams = new KafkaStreams(topology.apply(registry), properties(settings, extra));
         this.kafkaMetrics = new KafkaStreamsMetrics(streams);
         this.kafkaMetrics.bindTo(registry);
         this.http = new MiniHttpServer(settings.httpPort(), registry, this::live, this::ready);
     }
 
     public static StreamsAppBootstrap create(StreamsSettings settings, Topology topology) {
-        return new StreamsAppBootstrap(settings, registry -> topology);
+        return new StreamsAppBootstrap(settings, new Properties(), registry -> topology);
     }
 
     public static StreamsAppBootstrap create(StreamsSettings settings, Function<PrometheusMeterRegistry, Topology> topology) {
-        return new StreamsAppBootstrap(settings, topology);
+        return new StreamsAppBootstrap(settings, new Properties(), topology);
+    }
+
+    public static StreamsAppBootstrap create(StreamsSettings settings, Properties extra, Function<PrometheusMeterRegistry, Topology> topology) {
+        return new StreamsAppBootstrap(settings, extra, topology);
     }
 
     static Properties properties(StreamsSettings settings) {
+        return properties(settings, new Properties());
+    }
+
+    static Properties properties(StreamsSettings settings, Properties extra) {
         var props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, settings.applicationId());
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, settings.bootstrapServers());
@@ -55,6 +66,7 @@ public final class StreamsAppBootstrap implements AutoCloseable {
         props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, settings.standbyReplicas());
         props.put(StreamsConfig.consumerPrefix("group.instance.id"), settings.instanceId());
         props.put(StreamsConfig.METRICS_RECORDING_LEVEL_CONFIG, "INFO");
+for (var name : extra.keySet()) {            if (PROTECTED.contains(String.valueOf(name))) {                throw new IllegalArgumentException("propriedade reservada do bootstrap: " + name);            }            props.put(name, extra.get(name));        }
         return props;
     }
 
