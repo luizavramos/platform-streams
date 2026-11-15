@@ -6,6 +6,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
@@ -29,14 +30,18 @@ public final class StreamsAppBootstrap implements AutoCloseable {
     private volatile BooleanSupplier extraReadiness = () -> true;
     private volatile boolean closed;
 
-    private StreamsAppBootstrap(StreamsSettings settings, Topology topology) {
-        this.streams = new KafkaStreams(topology, properties(settings));
+    private StreamsAppBootstrap(StreamsSettings settings, Function<PrometheusMeterRegistry, Topology> topology) {
+        this.streams = new KafkaStreams(topology.apply(registry), properties(settings));
         this.kafkaMetrics = new KafkaStreamsMetrics(streams);
         this.kafkaMetrics.bindTo(registry);
         this.http = new MiniHttpServer(settings.httpPort(), registry, this::live, this::ready);
     }
 
     public static StreamsAppBootstrap create(StreamsSettings settings, Topology topology) {
+        return new StreamsAppBootstrap(settings, registry -> topology);
+    }
+
+    public static StreamsAppBootstrap create(StreamsSettings settings, Function<PrometheusMeterRegistry, Topology> topology) {
         return new StreamsAppBootstrap(settings, topology);
     }
 
