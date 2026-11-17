@@ -19,6 +19,14 @@ public final class MiniHttpServer implements AutoCloseable {
 
     private static final String PROMETHEUS_TYPE = "text/plain; version=0.0.4; charset=utf-8";
 
+    private static final String SWAGGER_PAGE = """
+            <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>API</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.min.css"></head>
+            <body><div id="ui"></div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.min.js"></script>
+            <script>window.onload=()=>SwaggerUIBundle({url:'/v3/api-docs',dom_id:'#ui'});</script></body></html>
+            """;
+
     private final HttpServer server;
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final PrometheusMeterRegistry registry;
@@ -73,8 +81,25 @@ public final class MiniHttpServer implements AutoCloseable {
                     }
                 }
                 case "/actuator/prometheus" -> reply(exchange, 200, PROMETHEUS_TYPE, registry.scrape());
+                case "/v3/api-docs" -> {
+                    var doc = openApi();
+                    if (doc == null) {
+                        reply(exchange, 404, "text/plain; charset=utf-8", "não encontrado");
+                    } else {
+                        reply(exchange, 200, "application/json", doc);
+                    }
+                }
+                case "/swagger-ui.html" -> reply(exchange, 200, "text/html; charset=utf-8", SWAGGER_PAGE);
                 default -> reply(exchange, 404, "text/plain; charset=utf-8", "não encontrado");
             }
+        }
+    }
+
+    /** Documento OpenAPI do serviço: o recurso {@code openapi.json} do classpath da aplicação (null se não houver). */
+    private static String openApi() throws IOException {
+        var loader = Thread.currentThread().getContextClassLoader();
+        try (var in = (loader != null ? loader : MiniHttpServer.class.getClassLoader()).getResourceAsStream("openapi.json")) {
+            return in == null ? null : new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
 
