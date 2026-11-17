@@ -59,9 +59,6 @@
     <build>
         <plugins>
             <plugin>
-                <!-- Exceção à regra "sem Jackson 2": o kafka-streams usa o jackson-databind 2 em tempo de execução (só a
-                     StateDirectory, mas ela roda na partida de todo app com estado). Só no escopo runtime: ele fica fora do
-                     classpath de compilação, então o nosso código não consegue importá-lo. Decisão do usuário (plano 003). -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>

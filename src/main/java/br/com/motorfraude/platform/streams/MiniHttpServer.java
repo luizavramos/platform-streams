@@ -10,11 +10,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 
-/**
- * Servidor HTTP mínimo (o do JDK, sem Spring) com os mesmos caminhos dos serviços Spring (constituição VII):
- * {@code /actuator/health}, {@code /actuator/health/liveness}, {@code /actuator/health/readiness} e
- * {@code /actuator/prometheus}.
- */
 public final class MiniHttpServer implements AutoCloseable {
 
     private static final String PROMETHEUS_TYPE = "text/plain; version=0.0.4; charset=utf-8";
@@ -95,7 +90,6 @@ public final class MiniHttpServer implements AutoCloseable {
         }
     }
 
-    /** Documento OpenAPI do serviço: o recurso {@code openapi.json} do classpath da aplicação (null se não houver). */
     private static String openApi() throws IOException {
         var loader = Thread.currentThread().getContextClassLoader();
         try (var in = (loader != null ? loader : MiniHttpServer.class.getClassLoader()).getResourceAsStream("openapi.json")) {

@@ -3,10 +3,6 @@ package br.com.motorfraude.platform.streams;
 import java.nio.file.Path;
 import java.util.Map;
 
-/**
- * Configuração de um app Kafka Streams. {@code instanceId} identifica a instância para o static membership: com ele um
- * pod que reinicia retoma as mesmas partições sem provocar rebalanceamento.
- */
 public record StreamsSettings(String applicationId, String bootstrapServers, Path stateDir, int replicationFactor,
         int standbyReplicas, String instanceId, int httpPort) {
 
@@ -28,10 +24,6 @@ public record StreamsSettings(String applicationId, String bootstrapServers, Pat
         }
     }
 
-    /**
-     * Lê das variáveis de ambiente: {@code KAFKA_BOOTSTRAP_SERVERS}, {@code HOSTNAME} (identifica a instância),
-     * {@code HTTP_PORT}, {@code STATE_DIR}, {@code REPLICATION_FACTOR} e {@code STANDBY_REPLICAS}.
-     */
     public static StreamsSettings fromEnvironment(String applicationId, Map<String, String> env) {
         return new StreamsSettings(
                 applicationId,

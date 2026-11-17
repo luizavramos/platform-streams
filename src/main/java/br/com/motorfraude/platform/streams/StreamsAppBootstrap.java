@@ -14,10 +14,6 @@ import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Sobe um app Kafka Streams com o que todos os apps do projeto precisam: processamento exactly-once, static membership,
- * métricas do Kafka Streams no Micrometer, servidor de saúde e métricas, e encerramento limpo.
- */
 public final class StreamsAppBootstrap implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(StreamsAppBootstrap.class);
@@ -77,7 +73,6 @@ for (var name : extra.keySet()) {            if (PROTECTED.contains(String.value
         return props;
     }
 
-    /** Condição extra de prontidão (ex.: o motor só fica pronto com o conjunto de regras carregado). */
     public StreamsAppBootstrap readinessCheck(BooleanSupplier check) {
         this.extraReadiness = check;
         return this;
