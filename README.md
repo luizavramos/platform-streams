@@ -1,6 +1,6 @@
 # platform-streams
 
-Base comum dos apps Kafka Streams do motor de fraude (customer-service e os demais que não usam Spring).
+Base comum dos apps Kafka Streams do motor de fraude, usada por `customer-service`, `detection-engine` e `transaction-service` (nenhum deles usa Spring).
 
 - `StreamsAppBootstrap`: exactly-once v2, static membership (`group.instance.id`), métricas do Kafka Streams no Micrometer, encerramento limpo.
 - `MiniHttpServer`: servidor HTTP do JDK com `/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness` e `/actuator/prometheus`.
